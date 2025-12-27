@@ -2,7 +2,7 @@ name: Build Noob AI Ultimate Multi-Platform
 on: [workflow_dispatch, push]
 
 jobs:
-  # --- JOB 1: BUILD DESKTOP (WINDOWS, MAC, LINUX) ---
+  # --- JOB 1: BUILD DESKTOP (Vẫn giữ nguyên vì Wails cần Go) ---
   build-desktop:
     strategy:
       fail-fast: false
@@ -17,7 +17,6 @@ jobs:
           - os: ubuntu-latest
             platform: linux/amd64
             short_name: linux
-
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -25,76 +24,53 @@ jobs:
         with:
           go-version: '1.21'
           cache: true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      # Cài đặt phụ thuộc riêng cho Linux
-      - if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev build-essential pkg-config
-          sudo ln -s /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
-
-      - name: Build Desktop App
+      - name: Build Desktop
         shell: bash
         run: |
           go install github.com/wailsapp/wails/v2/cmd/wails@latest
           export PATH=$PATH:$(go env GOPATH)/bin
           wails build -platform ${{ matrix.platform }}
-
-      - name: Package Desktop Assets
-        shell: bash
-        run: |
-          mkdir -p final-dist
-          if [ "${{ matrix.short_name }}" == "linux" ]; then
-            tar -czvf final-dist/noobai-linux.tar.gz -C build/bin/ .
-          elif [ "${{ matrix.short_name }}" == "macos" ]; then
-            cd build/bin && zip -r ../../final-dist/noobai-macos.zip .
-          else
-            cd build/bin && zip -r ../../final-dist/noobai-windows.zip .
-          fi
-
-      - name: Upload Desktop Artifacts
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: NoobAI-${{ matrix.short_name }}
-          path: final-dist/*
+          path: build/bin/*
 
-  # --- JOB 2: BUILD ANDROID (AUTO CAPACITOR) ---
+  # --- JOB 2: BUILD ANDROID (DÀNH CHO DỰ ÁN KHÔNG CÓ PACKAGE.JSON) ---
   build-android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Node.js & Java
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Auto Capacitor Setup & Build
+      - name: Setup Android Environment & Build
         run: |
-          # Vào thư mục frontend (mặc định của Wails)
-          cd frontend
-          npm install
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          # 1. Tìm thư mục chứa giao diện (nơi có index.html)
+          HTML_PATH=$(find . -name "index.html" -not -path "*/node_modules/*" | head -n 1)
+          if [ -z "$HTML_PATH" ]; then
+            echo "Không tìm thấy file index.html nào!"
+            exit 1
+          fi
+          WEB_DIR=$(dirname "$HTML_PATH")
+          echo "Thư mục web được phát hiện: $WEB_DIR"
+
+          # 2. Cài đặt Capacitor global vì không có package.json cục bộ
+          npm install -g @capacitor/cli @capacitor/core @capacitor/android
+
+          # 3. Khởi tạo Android
+          # Chúng ta khởi tạo ngay tại thư mục gốc của project
+          npx cap init "Noob AI" "dev.abcsnoob.deepmind.app" --web-dir "$WEB_DIR"
           
-          # Build web assets
-          npm run build
-          
-          # Tự động tìm folder build (dist/build/out)
-          WEB_DIR=$( [ -d "dist" ] && echo "dist" || [ -d "build" ] && echo "build" || echo "out" )
-          
-          # Khởi tạo Capacitor "lạnh" (không cần folder android có sẵn)
-          npx cap init "Noob AI" "com.noobai.app" --web-dir $WEB_DIR
+          # 4. Thêm nền tảng Android và bọc code
           npx cap add android
           npx cap copy android
           
-          # Build file APK
+          # 5. Thực hiện build APK bằng Gradle
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
@@ -103,4 +79,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NoobAI-Android
-          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          path: "**/app-debug.apk"
