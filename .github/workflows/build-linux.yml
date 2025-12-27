@@ -1,39 +1,39 @@
 name: Build Noob AI Multi-Platform
-on: [workflow_dispatch]
+on: [workflow_dispatch, push]
 
 jobs:
   build:
     strategy:
-      fail-fast: false # Không hủy các bản build khác nếu một bản bị lỗi
+      fail-fast: false # Build tiếp bản Mac kể cả khi bản Linux bị lỗi
       matrix:
         include:
           - os: ubuntu-latest
             platform: linux/amd64
           - os: macos-latest
-            platform: darwin/universal
+            platform: darwin/universal # Build cho cả Mac Intel và Apple Silicon (M1/M2/M3)
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
           cache: true
 
-      # Sửa lỗi Exit Code 100: Cài đầy đủ thư viện đồ họa cho Linux
+      # Sửa lỗi 'Unable to locate package' trên Ubuntu 24.04
       - if: matrix.os == 'ubuntu-latest'
         name: Install Linux Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev build-essential pkg-config
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev build-essential pkg-config
         
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
         
       - name: Build App
         run: |
-          # Đảm bảo lệnh wails có thể chạy được
+          # Thêm đường dẫn Go bin vào PATH để chạy được lệnh wails
           export PATH=$PATH:$(go env GOPATH)/bin
           wails build -platform ${{ matrix.platform }}
           
