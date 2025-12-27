@@ -36,11 +36,27 @@ jobs:
       - name: Build App
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
+          # Dọn rác file .exe cũ trước khi build
+          rm -rf build/bin/*
           wails build -platform ${{ matrix.platform }}
+
+      # Bước nén riêng cho Linux để giữ quyền thực thi
+      - if: matrix.os == 'ubuntu-latest'
+        name: Package Linux (.tar.gz)
+        run: |
+          tar -czvf noobai-linux.tar.gz -C build/bin/ .
           
+      # Bước nén cho MacOS (giữ nguyên .zip cho "Bố Táo")
+      - if: matrix.os == 'macos-latest'
+        name: Package MacOS (.zip)
+        run: |
+          cd build/bin && zip -r ../../noobai-macos.zip .
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          # Dùng short_name (linux hoặc macos) để không bị lỗi ký tự / nữa
-          name: NoobAI-${{ matrix.short_name }}
-          path: build/bin/
+          name: NoobAI-${{ matrix.short_name }}-final
+          # Tải lên file đã nén tương ứng
+          path: |
+            *.tar.gz
+            *.zip
