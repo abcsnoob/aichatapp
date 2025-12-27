@@ -78,7 +78,8 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21' # Nâng từ 17 lên 21 để khớp với yêu cầu của Capacitor mới
+
       - name: Force Build Android
         run: |
           if [ ! -f "package.json" ]; then
@@ -90,12 +91,10 @@ jobs:
           HTML_PATH=$(find . -name "index.html" -not -path "*/node_modules/*" | head -n 1)
           WEB_DIR=$(dirname "$HTML_PATH")
           
-          # Xóa confirm để tránh lỗi unknown option
           npx cap init "Abcs Noob AI" "com.abcsnoob.deepmind.app" --web-dir "$WEB_DIR"
           npx cap add android
-          
-          # Copy và build
           npx cap copy android
+          
           cd android && chmod +x gradlew && ./gradlew assembleDebug
           
       - name: Upload Android APK
