@@ -4,13 +4,15 @@ on: [workflow_dispatch, push]
 jobs:
   build:
     strategy:
-      fail-fast: false # Build tiếp bản Mac kể cả khi bản Linux bị lỗi
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             platform: linux/amd64
+            short_name: linux
           - os: macos-latest
-            platform: darwin/universal # Build cho cả Mac Intel và Apple Silicon (M1/M2/M3)
+            platform: darwin/universal
+            short_name: macos
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -21,24 +23,24 @@ jobs:
           go-version: '1.21'
           cache: true
 
-      # Sửa lỗi 'Unable to locate package' trên Ubuntu 24.04
       - if: matrix.os == 'ubuntu-latest'
         name: Install Linux Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev build-essential pkg-config
+          sudo ln -s /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
         
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
         
       - name: Build App
         run: |
-          # Thêm đường dẫn Go bin vào PATH để chạy được lệnh wails
           export PATH=$PATH:$(go env GOPATH)/bin
           wails build -platform ${{ matrix.platform }}
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NoobAI-${{ matrix.platform }}
+          # Dùng short_name (linux hoặc macos) để không bị lỗi ký tự / nữa
+          name: NoobAI-${{ matrix.short_name }}
           path: build/bin/
