@@ -1,0 +1,38 @@
+name: Build Noob AI Multi-Platform
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+          - os: macos-latest
+            platform: darwin/universal # Build một phát chạy cả chip Intel và M1/M2/M3
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      # Cài đặt thư viện riêng cho Linux
+      - if: matrix.os == 'ubuntu-latest'
+        name: Install Linux Deps
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+        
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+        
+      - name: Build App
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          wails build -platform ${{ matrix.platform }}
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoobAI-${{ matrix.platform }}
+          path: build/bin/

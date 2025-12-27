@@ -1,0 +1,14 @@
+{
+  "name": "Abc's Noob AI",
+  "outputfilename": "Abc's Noob AI",
+  "frontend:dir": "frontend",
+  "author": {
+    "name": "Abc's Noob DeepMind"
+  },
+  "info": {
+    "productName": "Abc's Noob AI",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2025 Abcsnoob",
+    "comments": "Vãi cả nồi App"
+  }
+}
