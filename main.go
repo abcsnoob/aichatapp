@@ -16,7 +16,7 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "Noob AI Pro - Ultimate OS",
+		Title:  "Abc's Noob AI Apps",
 		Width:  1280,
 		Height: 800,
 
