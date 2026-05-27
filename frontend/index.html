@@ -4,68 +4,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kết nối mạng</title>
+
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
-        
-        #main-iframe { width: 100%; height: 100%; border: none; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #main-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
 
         #status-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #808080; color: white;
-            display: none; align-items: center; justify-content: center;
-            font-size: 24px; z-index: 9999;
-            /* Cho phép cuộn nhưng chặn tương tác chạm vào iframe bên dưới */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+
+            background: #28a745;
+            color: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 24px;
+            font-family: sans-serif;
+
+            z-index: 9999;
+
             pointer-events: none;
             overflow-y: auto;
-            transition: background 1s ease; /* Thêm transition cho background */
+
+            transition: background 0.5s ease, opacity 0.5s ease;
         }
     </style>
 </head>
 <body>
 
-    <iframe id="main-iframe" src="https://social.unaux.com"></iframe>
-    <div id="status-overlay"></div> <!- Thêm div để chứa text ->
+    <iframe id="main-iframe" src="https://asocial.wasmer.app/"></iframe>
+
+    <!-- Overlay -->
+    <div id="status-overlay">Trở lại trực tuyến</div>
 
     <script>
         const overlay = document.getElementById('status-overlay');
-        const overlayText = overlay; <!- Đổi tên biến để dễ hiểu hơn ->
+
         let wasOffline = false;
+
+        // Hiện mặc định 2 giây
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 2000);
 
         async function checkConnection() {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, 5000);
 
             try {
-                // Kiểm tra bằng cách fetch chính trang web hoặc 1 file trên server
-                await fetch('https://social.unaux.com', { mode: 'no-cors', signal: controller.signal });
-                
-                // NẾU CÓ MẠNG
+                await fetch('https://asocial.wasmer.app', {
+                    mode: 'no-cors',
+                    signal: controller.signal
+                });
+
+                // Có mạng trở lại
                 if (wasOffline) {
-                    overlayText.textContent = "Trở lại trực tuyến";
-                    overlay.style.background = "#28a745"; // Đổi màu sang xanh lá
+                    overlay.textContent = "Trở lại trực tuyến";
+                    overlay.style.background = "#28a745";
+                    overlay.style.display = "flex";
+
                     wasOffline = false;
+
                     setTimeout(() => {
                         overlay.style.display = 'none';
-                    }, 1000); // Ẩn overlay sau 1s (để kịp nhìn thấy màu xanh lá)
-                } else {
-                     overlay.style.display = 'none'; // Ẩn overlay nếu không bị mất mạng
+                    }, 2000);
                 }
+
             } catch (error) {
-                // NẾU KHÔNG CÓ MẠNG
-                overlayText.textContent = "Không có internet";
-                overlay.style.background = "#808080"; // Đổi màu về xám
-                overlay.style.display = 'flex';
+
+                // Mất mạng
+                overlay.textContent = "Không có internet";
+                overlay.style.background = "#808080";
+                overlay.style.display = "flex";
+
                 wasOffline = true;
             } finally {
                 clearTimeout(timeoutId);
             }
         }
 
-        // Kiểm tra ngay khi tải trang
-        checkConnection();
+        // Kiểm tra lần đầu sau 2 giây
+        setTimeout(checkConnection, 2000);
 
         // Kiểm tra định kỳ mỗi 20 giây
         setInterval(checkConnection, 20000);
     </script>
+
 </body>
 </html>
