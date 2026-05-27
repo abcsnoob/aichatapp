@@ -1,12 +1,12 @@
 {
-  "name": "Abc's Noob AI",
-  "outputfilename": "Abc's Noob AI",
+  "name": "Abc's Noob Social",
+  "outputfilename": "Abc's Noob Social",
   "frontend:dir": "frontend",
   "author": {
-    "name": "Abc's Noob DeepMind"
+    "name": "Abc's Noob Social"
   },
   "info": {
-    "productName": "Abc's Noob AI",
+    "productName": "Abc's Noob Social",
     "productVersion": "1.0.0",
     "copyright": "Copyright © 2025 Abcsnoob",
     "comments": "Vãi cả nồi App"
