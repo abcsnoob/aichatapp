@@ -19,6 +19,8 @@ func main() {
 		Title:  "Abc's Noob AI Apps",
 		Width:  1280,
 		Height: 800,
+		// Thêm dòng này để mặc định full screen ngay khi khởi chạy
+		Fullscreen: true, 
 
 		AssetServer: &assetserver.Options{
 			Assets: assets,
@@ -35,7 +37,6 @@ func main() {
 			BackdropType:         windows.Mica,
 		},
 	})
-
 	if err != nil {
 		println("Lỗi rồi ông giáo ơi:", err.Error())
 	}
