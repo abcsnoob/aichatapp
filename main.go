@@ -16,7 +16,7 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "Abc's Noob AI Apps",
+		Title:  "Abc's Noob Social",
 		Width:  1280,
 		Height: 800,
 		// Thêm dòng này để mặc định full screen ngay khi khởi chạy
