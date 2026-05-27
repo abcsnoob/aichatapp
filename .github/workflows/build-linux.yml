@@ -41,7 +41,6 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           
           if [ "${{ matrix.short_name }}" == "linux" ]; then
-            # Cú lừa Webkit 4.1 thành 4.0
             mkdir -p /tmp/pkgconfig
             cp /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc /tmp/pkgconfig/webkit2gtk-4.0.pc
             export PKG_CONFIG_PATH=/tmp/pkgconfig:$PKG_CONFIG_PATH
@@ -54,20 +53,18 @@ jobs:
         run: |
           mkdir -p final-dist
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            # Linux dùng TAR.GZ chuẩn bài
-            tar -czvf final-dist/abcsnoob-linux.tar.gz -C build/bin/ .
+            tar -czvf final-dist/AbcsNoobSocial.tar.gz -C build/bin/ .
           elif [ "${{ matrix.os }}" == "macos-latest" ]; then
-            cd build/bin && zip -r ../../final-dist/abcsnoob-macos.zip .
+            cd build/bin && zip -r ../../final-dist/AbcsNoobSocial.zip .
           else
-            # Windows dùng PowerShell nén ZIP
-            powershell -Command "Compress-Archive -Path build/bin/* -DestinationPath final-dist/abcsnoob-windows.zip -Force"
+            powershell -Command "Compress-Archive -Path build/bin/* -DestinationPath final-dist/AbcsNoobSocial.zip -Force"
           fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NoobAI-${{ matrix.short_name }}
-          path: final-dist/*
+          name: AbcsNoobSocial-${{ matrix.short_name }}
+          path: final-dist/
 
   # --- JOB 2: BUILD ANDROID (FULL RELEASE + SIGNED) ---
   build-android:
@@ -82,19 +79,16 @@ jobs:
 
       - name: Build & Sign Android
         run: |
-          # 1. Tạo môi trường npm
           if [ ! -f "package.json" ]; then
             echo '{"name": "abcsnoob-deepmind", "version": "1.3.0"}' > package.json
           fi
           npm install @capacitor/cli @capacitor/core @capacitor/android
           
-          # 2. Sync Web Assets
           HTML_PATH=$(find . -name "index.html" -not -path "*/node_modules/*" | head -n 1)
           WEB_DIR=$(dirname "$HTML_PATH")
-          npx cap init "Abcs Noob AI" "com.abcsnoob.deepmind.app" --web-dir "$WEB_DIR"
+          npx cap init "Abcs Noob AI" "com.abcsnoob.social.app" --web-dir "$WEB_DIR"
           npx cap add android
           
-          # 3. Fix Duplicate Kotlin
           sed -i '/dependencies {/i \
           configurations.all {\
               resolutionStrategy.eachDependency { details -> \
@@ -106,22 +100,20 @@ jobs:
 
           npx cap copy android
           
-          # 4. Tạo Keystore (Admin @ Abcs Noob DeepMind)
           keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 \
             -alias my-alias -storepass abcsnoob123 -keypass abcsnoob123 \
             -dname "CN=Admin, OU=Abc's Noob DeepMind, O=Abc's Noob, L=Gialai, ST=Vietnam, C=VN"
 
-          # 5. Build & Sign
           cd android && chmod +x gradlew
           ./gradlew assembleRelease
           
           APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           ${ANDROID_HOME}/build-tools/34.0.0/apksigner sign --ks ../my-release-key.jks \
             --ks-pass pass:abcsnoob123 --key-pass pass:abcsnoob123 \
-            --out ../NoobAI-Official-Signed.apk $APK_RAW
+            --out ../AbcsNoobSocial.apk $APK_RAW
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: NoobAI-Android-Official
-          path: NoobAI-Official-Signed.apk
+          name: AbcsNoobSocial
+          path: AbcsNoobSocial.apk
