@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"net/http"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -9,11 +10,23 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
-//go:embed all:frontend
+//go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
 	app := NewApp()
+
+	// Cấu hình Middleware để chèn Header tùy chỉnh
+	// Handler này sẽ bọc file server mặc định của Wails
+	assetsHandler := assetserver.NewAssetsHandler(assets)
+	
+	customHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Thêm header tùy chỉnh vào mọi response từ AssetServer
+		w.Header().Set("X-Abcsnoob-webview", "true")
+		
+		// Tiếp tục phục vụ file từ assets
+		assetsHandler.ServeHTTP(w, r)
+	})
 
 	err := wails.Run(&options.App{
 		Title:  "Abc's Noob Social",
@@ -21,7 +34,8 @@ func main() {
 		Height: 800,
 
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets:  assets,
+			Handler: customHandler, // Áp dụng handler đã tùy chỉnh
 		},
 
 		BackgroundColour: &options.RGBA{R: 11, G: 14, B: 17, A: 1},
@@ -29,13 +43,12 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
-		
-		// Chỉ cấu hình WebviewUserDataPath cho Windows
+
 		Windows: &windows.Options{
 			WebviewIsTransparent: true,
 			WindowIsTranslucent:  true,
 			BackdropType:         windows.Mica,
-			WebviewUserDataPath:  "appdata", 
+			WebviewUserDataPath:  "appdata",
 		},
 	})
 
