@@ -14,28 +14,27 @@ import (
 var assets embed.FS
 
 func main() {
+	// Khởi tạo ứng dụng
 	app := NewApp()
 
-	// Cấu hình Middleware để chèn Header tùy chỉnh
-	// Handler này sẽ bọc file server mặc định của Wails
-	assetsHandler := assetserver.NewAssetsHandler(assets)
-	
-	customHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Thêm header tùy chỉnh vào mọi response từ AssetServer
-		w.Header().Set("X-Abcsnoob-webview", "true")
-		
-		// Tiếp tục phục vụ file từ assets
-		assetsHandler.ServeHTTP(w, r)
-	})
-
+	// Khởi tạo Wails
 	err := wails.Run(&options.App{
 		Title:  "Abc's Noob Social",
 		Width:  1280,
 		Height: 800,
 
 		AssetServer: &assetserver.Options{
-			Assets:  assets,
-			Handler: customHandler, // Áp dụng handler đã tùy chỉnh
+			Assets: assets,
+			// Sử dụng Middleware để chèn Header tùy chỉnh vào mọi response
+			Middleware: func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// Thêm header tùy chỉnh
+					w.Header().Set("X-Abcsnoob-webview", "true")
+					
+					// Chuyển tiếp request đến handler mặc định của Wails
+					next.ServeHTTP(w, r)
+				})
+			},
 		},
 
 		BackgroundColour: &options.RGBA{R: 11, G: 14, B: 17, A: 1},
